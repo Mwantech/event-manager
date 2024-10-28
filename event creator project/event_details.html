@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Media Viewer</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.1/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .media-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .media-display img, .media-display video {
+            max-width: 100%;
+            max-height: 60vh;
+            object-fit: contain;
+        }
+        .metadata {
+            margin-top: 1rem;
+            text-align: center;
+        }
+        .fullscreen-button {
+            margin-top: 1rem;
+            background-color: #1a202c;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+        }
+        .nav-buttons {
+            margin-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+        .nav-button {
+            background-color: #3182ce;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-gray-800 p-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-white text-lg font-semibold">Eventora</h1>
+            <button class="lg:hidden text-white focus:outline-none" onclick="toggleMenu()">
+                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+            <div id="desktop-menu" class="hidden lg:flex space-x-4">
+                <a href="index.html" class="text-white mx-4">Create Event</a>
+                <a href="upload_media.html" class="text-white mx-4">Upload Media</a>
+                <a href="event_details.html?link=<?php echo urlencode($event_link); ?>" class="text-white mx-4">Event Details</a>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="lg:hidden hidden mt-4">
+            <div class="flex flex-col space-y-2">
+                <a href="index.html" class="text-white mx-4">Create Event</a>
+                <a href="upload_media.html" class="text-white mx-4">Upload Media</a>
+                <a href="event_details.html?link=<?php echo urlencode($event_link); ?>" class="text-white mx-4">Event Details</a>
+            </div>
+        </div>
+    </nav>
+    <div class="max-w-4xl mx-auto p-6 bg-white shadow-md mt-10 rounded-lg">
+        <div class="media-container">
+            <!-- Display for Image/Video -->
+            <div id="media-display" class="media-display mb-6">
+                <!-- Dynamic content will be inserted here -->
+            </div>
+
+            <!-- Metadata Section -->
+            <div class="metadata">
+                <h2 id="media-title" class="text-2xl font-bold"></h2>
+                <p id="media-description" class="text-gray-700 mt-2"></p>
+                <p id="media-dimensions" class="text-gray-500 mt-1"></p>
+            </div>
+
+            <!-- Download Button -->
+            <a id="download-button" href="#" download class="bg-blue-500 text-white p-2 rounded mt-4 inline-block">Download</a>
+
+            <!-- Fullscreen Mode Button -->
+            <button id="fullscreen-button" class="fullscreen-button">Enter Fullscreen</button>
+
+            <!-- Navigation Buttons -->
+            <div class="nav-buttons">
+                <button id="prev-button" class="nav-button">Previous</button>
+                <button id="next-button" class="nav-button">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle mobile menu
+        function toggleMenu() {
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenu.classList.toggle('hidden');
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            // Function to update the media display
+            const updateMediaDisplay = (media, currentIndex) => {
+                const mediaDisplay = document.getElementById('media-display');
+                const titleElem = document.getElementById('media-title');
+                const descriptionElem = document.getElementById('media-description');
+                const dimensionsElem = document.getElementById('media-dimensions');
+                const downloadButton = document.getElementById('download-button');
+
+                const currentMedia = media[currentIndex];
+
+                titleElem.textContent = currentMedia.title;
+                descriptionElem.textContent = `Description: ${currentMedia.description}`;
+                dimensionsElem.textContent = `Dimensions: ${currentMedia.dimensions}`;
+                downloadButton.href = `uploads/${currentMedia.file_name}`;
+                downloadButton.download = currentMedia.file_name;
+
+                if (currentMedia.file_type === 'image') {
+                    mediaDisplay.innerHTML = `<img src="uploads/${currentMedia.file_name}" alt="${currentMedia.title}">`;
+                } else {
+                    mediaDisplay.innerHTML = `<video src="uploads/${currentMedia.file_name}" controls></video>`;
+                }
+            };
+
+            const loadEventData = () => {
+                const eventLink = new URLSearchParams(window.location.search).get('link');
+
+                // Fetch event details and media from the backend using the unique event link
+                fetch(`backend/get_event.php?link=${eventLink}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            console.error('Error:', data.error);
+                            return;
+                        }
+
+                        const media = data.media.map(item => ({
+                            ...item,
+                            title: `Media ${item.file_type === 'image' ? 'Image' : 'Video'}`, // Add dynamic titles
+                            description: `Description for ${item.file_name}`, // Dynamic description
+                            dimensions: 'Unknown' // Update if you have dimensions
+                        }));
+
+                        let currentIndex = 0;
+                        updateMediaDisplay(media, currentIndex);
+
+                        document.getElementById('prev-button').addEventListener('click', () => {
+                            currentIndex = (currentIndex === 0) ? media.length - 1 : currentIndex - 1;
+                            updateMediaDisplay(media, currentIndex);
+                        });
+
+                        document.getElementById('next-button').addEventListener('click', () => {
+                            currentIndex = (currentIndex === media.length - 1) ? 0 : currentIndex + 1;
+                            updateMediaDisplay(media, currentIndex);
+                        });
+
+                        document.getElementById('fullscreen-button').addEventListener('click', () => {
+                            const mediaElement = document.querySelector('#media-display img, #media-display video');
+                            if (mediaElement.requestFullscreen) {
+                                mediaElement.requestFullscreen();
+                            } else if (mediaElement.mozRequestFullScreen) {
+                                mediaElement.mozRequestFullScreen();
+                            } else if (mediaElement.webkitRequestFullscreen) {
+                                mediaElement.webkitRequestFullscreen();
+                            } else if (mediaElement.msRequestFullscreen) {
+                                mediaElement.msRequestFullscreen();
+                            }
+                        });
+                    })
+                    .catch(error => console.error('Error loading event data:', error));
+            };
+
+            loadEventData();
+        });
+    </script>
+    
+</body>
+</html>

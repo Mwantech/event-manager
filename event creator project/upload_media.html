@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Media</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.1/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .dropzone {
+            border: 2px dashed #cbd5e0;
+            padding: 2rem;
+            text-align: center;
+            transition: border-color 0.2s ease;
+        }
+
+        .dropzone:hover {
+            border-color: #4a5568;
+        }
+
+        .dropzone.drag-over {
+            border-color: #3182ce;
+        }
+
+        .file-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .file-preview img,
+        .file-preview video {
+            max-width: 100px;
+            max-height: 100px;
+        }
+
+        .progress-bar {
+            height: 5px;
+            background-color: #3182ce;
+            width: 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Navigation Bar -->
+    <nav class="bg-gray-800 p-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-white text-lg font-semibold">Eventora</h1>
+            <button class="lg:hidden text-white focus:outline-none" onclick="toggleMenu()">
+                <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+            <div id="desktop-menu" class="hidden lg:flex space-x-4">
+                <a href="index.html" class="text-white mx-4">Create Event</a>
+                <a href="upload_media.html" class="text-white mx-4">Upload Media</a>
+                <a href="event_details.html?link=your_event_link" class="text-white mx-4">Event Details</a>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="lg:hidden hidden mt-4">
+            <div class="flex flex-col space-y-2">
+                <a href="index.html" class="text-white mx-4">Create Event</a>
+                <a href="upload_media.html" class="text-white mx-4">Upload Media</a>
+                <a href="event_details.html?link=your_event_link" class="text-white mx-4">Event Details</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Upload Media Form -->
+    <div class="max-w-2xl mx-auto p-6 bg-white shadow-md mt-10 rounded-lg">
+        <h1 class="text-2xl font-bold mb-6 text-gray-800">Upload Media</h1>
+        
+        <form id="media-upload-form" action="backend/upload_media.php" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="event_link" value="<?php echo $_GET['link']; ?>">
+            <input type="hidden" name="user_id" value="123"> <!-- Change this dynamically based on logged-in user -->
+    
+            <!-- Drag and Drop Area -->
+            <div id="dropzone" class="dropzone mb-4" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+                <p class="text-gray-700">Drag & Drop Files Here or Click to Select Files</p>
+                <p class="text-gray-500 text-sm">Supported formats: Images, Videos</p>
+                <input type="file" id="file-input" name="files[]" multiple accept="image/*,video/*" class="hidden" onchange="handleFileSelect(event)">
+                <div class="file-preview" id="file-preview"></div>
+            </div>
+    
+            <!-- Progress Bar -->
+            <div id="progress-container" class="w-full bg-gray-200 rounded mb-4 hidden">
+                <div id="progress-bar" class="progress-bar"></div>
+            </div>
+    
+            <button type="submit" class="w-full bg-blue-500 text-white p-2 rounded">Upload</button>
+        </form>
+    </div>
+    
+    <script>
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('file-input');
+        const filePreview = document.getElementById('file-preview');
+        const progressBar = document.getElementById('progress-bar');
+        const progressContainer = document.getElementById('progress-container');
+    
+        dropzone.addEventListener('click', () => fileInput.click());
+    
+        dropzone.addEventListener('dragover', handleDragOver);
+        dropzone.addEventListener('dragleave', handleDragLeave);
+        dropzone.addEventListener('drop', handleDrop);
+    
+        function handleDragOver(event) {
+            event.preventDefault();
+            dropzone.classList.add('drag-over');
+        }
+    
+        function handleDragLeave(event) {
+            dropzone.classList.remove('drag-over');
+        }
+    
+        function handleDrop(event) {
+            event.preventDefault();
+            dropzone.classList.remove('drag-over');
+            handleFileSelect(event);
+        }
+    
+        function handleFileSelect(event) {
+            const files = event.target.files || event.dataTransfer.files;
+            filePreview.innerHTML = '';
+    
+            for (let file of files) {
+                let fileElement;
+                if (file.type.startsWith('image/')) {
+                    fileElement = document.createElement('img');
+                    fileElement.src = URL.createObjectURL(file);
+                } else if (file.type.startsWith('video/')) {
+                    fileElement = document.createElement('video');
+                    fileElement.src = URL.createObjectURL(file);
+                    fileElement.controls = true;
+                }
+    
+                fileElement.style.maxWidth = '100px';
+                fileElement.style.maxHeight = '100px';
+                filePreview.appendChild(fileElement);
+            }
+        }
+    
+        document.getElementById('media-upload-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+    
+            const formData = new FormData(this);
+            const xhr = new XMLHttpRequest();
+    
+            progressContainer.classList.remove('hidden');
+    
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percentage = Math.round((e.loaded / e.total) * 100);
+                    progressBar.style.width = percentage + '%';
+                }
+            });
+    
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    alert('Files uploaded successfully.');
+                    window.location.href = `event_details.html?link=${formData.get('event_link')}`;
+                } else {
+                    alert('File upload failed. Please try again.');
+                }
+            };
+    
+            xhr.open('POST', this.action);
+            xhr.send(formData);
+        });
+    </script>
+    

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up & Login Eventora</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* General Styles */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f4f4f4;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    width: 400px;
+    padding: 20px;
+    background-color: #ffffff;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+}
+
+/* Tab Navigation */
+.tab-container {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 20px;
+}
+
+.tab {
+    flex: 1;
+    padding: 10px 0;
+    background-color: #e9ecef;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    text-align: center;
+    border-radius: 10px 10px 0 0;
+    transition: background-color 0.3s ease;
+}
+
+.tab.active {
+    background-color: #ffffff;
+    color: #007bff;
+    border-bottom: 2px solid #007bff;
+}
+
+/* Form Styles */
+.form-container {
+    display: none;
+}
+
+.form-container.active {
+    display: block;
+}
+
+h2 {
+    margin-bottom: 20px;
+    text-align: center;
+    color: #343a40;
+}
+
+label {
+    display: block;
+    margin: 10px 0 5px;
+    color: #495057;
+}
+
+input {
+    width: 90%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid #ced4da;
+    font-size: 16px;
+}
+
+input:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.error {
+    color: red;
+    font-size: 12px;
+}
+
+#password-strength {
+    color: green;
+    font-size: 12px;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+    .container {
+        width: 90%;
+        padding: 15px;
+    }
+}
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tab-container">
+            <button id="signup-tab" class="tab active">Sign Up</button>
+            <button id="login-tab" class="tab">Login</button>
+        </div>
+
+        <div class="form-container" id="signup-container">
+            <h2>Sign Up</h2>
+            <form id="signup-form">
+                <label for="signup-email">Email:</label>
+                <input type="email" id="signup-email" name="email" aria-describedby="email-error" required>
+                <span id="email-error" class="error"></span>
+
+                <label for="signup-password">Password:</label>
+                <input type="password" id="signup-password" name="password" aria-describedby="password-error" required>
+                <span id="password-strength"></span>
+                <span id="password-error" class="error"></span>
+
+                <button type="submit">Sign Up</button>
+            </form>
+        </div>
+
+        <div class="form-container" id="login-container">
+            <h2>Login</h2>
+            <form id="login-form">
+                <label for="login-email">Email:</label>
+                <input type="email" id="login-email" name="email" aria-describedby="login-email-error" required>
+                <span id="login-email-error" class="error"></span>
+
+                <label for="login-password">Password:</label>
+                <input type="password" id="login-password" name="password" aria-describedby="login-password-error" required>
+                <span id="login-password-error" class="error"></span>
+
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+    const signupForm = document.getElementById('signup-form');
+    const loginForm = document.getElementById('login-form');
+    const signupEmail = document.getElementById('signup-email');
+    const signupPassword = document.getElementById('signup-password');
+    const emailError = document.getElementById('email-error');
+    const passwordError = document.getElementById('password-error');
+    const passwordStrength = document.getElementById('password-strength');
+    const signupTab = document.getElementById('signup-tab');
+    const loginTab = document.getElementById('login-tab');
+    const signupContainer = document.getElementById('signup-container');
+    const loginContainer = document.getElementById('login-container');
+
+    // Show the sign-up form by default
+    signupContainer.classList.add('active');
+
+    signupTab.addEventListener('click', () => {
+        signupContainer.classList.add('active');
+        loginContainer.classList.remove('active');
+        signupTab.classList.add('active');
+        loginTab.classList.remove('active');
+    });
+
+    loginTab.addEventListener('click', () => {
+        loginContainer.classList.add('active');
+        signupContainer.classList.remove('active');
+        loginTab.classList.add('active');
+        signupTab.classList.remove('active');
+    });
+
+    // Simple password strength checker
+    signupPassword.addEventListener('input', () => {
+        const strength = checkPasswordStrength(signupPassword.value);
+        passwordStrength.textContent = strength;
+    });
+
+    signupForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (validateEmail(signupEmail.value) && validatePassword(signupPassword.value)) {
+            // Save user data securely, redirect to login
+            console.log('User registered:', signupEmail.value);
+            window.location.href = 'login.html';
+        } else {
+            if (!validateEmail(signupEmail.value)) {
+                emailError.textContent = 'Invalid email format';
+            }
+            if (!validatePassword(signupPassword.value)) {
+                passwordError.textContent = 'Password is too weak';
+            }
+        }
+    });
+
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        // Logic for checking credentials
+        console.log('User logged in with:', email);
+        // Redirect to user dashboard or protected content
+    });
+
+    function validateEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(String(email).toLowerCase());
+    }
+
+    function validatePassword(password) {
+        return checkPasswordStrength(password) === 'Strong';
+    }
+
+    function checkPasswordStrength(password) {
+        if (password.length > 8 && /[A-Z]/.test(password) && /[0-9]/.test(password)) {
+            return 'Strong';
+        } else if (password.length > 6) {
+            return 'Moderate';
+        } else {
+            return 'Weak';
+        }
+    }
+});
+
+    </script>
+</body>
+</html>
